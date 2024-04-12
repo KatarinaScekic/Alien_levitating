@@ -20,7 +20,7 @@
 # Zahvalnosti:
 **[Panorama korišćena za skybox](https://www.eso.org/public/images/eso0932a/)**
 
-**[Softver korišćena za pravljenje skzboxa od prethodne panorame](https://jaxry.github.io/panorama-to-cubemap/
+**[Softver korišćena za pravljenje skyboxa od prethodne panorame](https://jaxry.github.io/panorama-to-cubemap/
 )**
 
 **[Model vanzemaljca](https://sketchfab.com/3d-models/alien-bc4db76ad4b54451b07d035cdaeed7de)**
