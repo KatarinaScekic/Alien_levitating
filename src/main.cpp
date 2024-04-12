@@ -37,8 +37,8 @@ const unsigned int SCR_WIDTH = 1600;
 const unsigned int SCR_HEIGHT = 900;
 bool blinn = false;
 bool blinnKeyPressed = false;
-// camera
 
+// camera
 float lastX = SCR_WIDTH / 2.0f;
 float lastY = SCR_HEIGHT / 2.0f;
 bool firstMouse = true;
@@ -73,15 +73,13 @@ struct SpotLight {
     glm::vec3 specular;
 };
 
-
 struct ProgramState {
     glm::vec3 clearColor = glm::vec3(0);
     bool ImGuiEnabled = false;
     Camera camera;
     bool CameraMouseMovementUpdateEnabled = true;
-    //glm::vec3 mini_islandPosition = glm::vec3(0.0f,  0.0f, 20.0f);
+
     glm::vec3 treePosition = glm::vec3(25.0f, 0.0f, 10.0f);
-    //glm::vec3 meteorPosition = glm::vec3(0.0f, 0.0f, 0.0f);
     glm::vec3 platformPosition = glm::vec3(0.0f, 0.0f, 0.0f);
     glm::vec3 ufoPosition = glm::vec3(0.0f, 15.0f, 0.0f);
     glm::vec3 plantPosition = glm::vec3(-20.0f, -6.5f, 0.0f);
@@ -139,11 +137,10 @@ void ProgramState::LoadFromFile(std::string filename) {
 
 ProgramState *programState;
 
-void DrawImGui(ProgramState *programState);
+//void DrawImGui(ProgramState *programState);
 
 int main() {
     // glfw: initialize and configure
-    // ------------------------------
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
@@ -154,7 +151,6 @@ int main() {
 #endif
 
     // glfw window creation
-    // --------------------
     GLFWwindow *window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "LearnOpenGL", NULL, NULL);
     if (window == NULL) {
         std::cout << "Failed to create GLFW window" << std::endl;
@@ -170,7 +166,6 @@ int main() {
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
     // glad: load all OpenGL function pointers
-    // ---------------------------------------
     if (!gladLoadGLLoader((GLADloadproc) glfwGetProcAddress)) {
         std::cout << "Failed to initialize GLAD" << std::endl;
         return -1;
@@ -184,23 +179,23 @@ int main() {
     if (programState->ImGuiEnabled) {
         glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
     }
+
+    /*
     // Init Imgui
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGuiIO &io = ImGui::GetIO();
     (void) io;
-
-
-
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init("#version 330 core");
+    */
+
+    programState->camera.MovementSpeed = 7.0f;
 
     // configure global opengl state
-    // -----------------------------
     glEnable(GL_DEPTH_TEST);
 
     // build and compile shaders
-    // -------------------------
     Shader ourShader("resources/shaders/model_lighting.vs", "resources/shaders/model_lighting.fs");
     Shader skyShader("resources/shaders/sky_shader.vs", "resources/shaders/sky_shader.fs");
     Shader boxShader("resources/shaders/box_shader.vs", "resources/shaders/box_shader.fs");
@@ -250,7 +245,6 @@ int main() {
             -0.5f,  0.5f,  0.5f,  0.0f, 0.0f, // bottom-left
             -0.5f,  0.5f, -0.5f,  0.0f, 1.0f  // top-left
     };
-
 
     // skybox vertices
     float skyboxVertices[] = {
@@ -311,15 +305,13 @@ int main() {
     // position attribute
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
+
     // texture coord attribute
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
 
     // load and create a texture
-    // -------------------------
-
     unsigned int texture1 = loadTexture("resources/textures/blue_tesseract.jpg");
-
 
     // skybox buffers
     unsigned int skyboxVAO, skyboxVBO;
@@ -341,20 +333,18 @@ int main() {
                     FileSystem::getPath("resources/textures/milky_way/pz.jpg").c_str(),
                     FileSystem::getPath("resources/textures/milky_way/nz.jpg").c_str()
             };
+
     //load maps
     unsigned int cubemapTexture = loadCubemap(cube_faces);
 
     // shaders config
     skyShader.use();
     skyShader.setInt("skybox", 0);
-
     boxShader.use();
     boxShader.setInt("texture1", 0);
 
 
     // load models
-    // -----------
-
     Model mini_island("resources/objects/mini_island/untitled.obj");
     mini_island.SetShaderTextureNamePrefix("material.");
 
@@ -389,17 +379,17 @@ int main() {
     spaceship.SetShaderTextureNamePrefix("material.");
     stbi_set_flip_vertically_on_load(true);
 
+    // point light
     PointLight& pointLight = programState->pointLight;
     pointLight.position = glm::vec3(4.0f, 4.0, 0.0);
     pointLight.ambient = glm::vec3(10.0f, 10.0f, 10.0f);
     pointLight.diffuse = glm::vec3(0.6, 0.6, 0.6);
     pointLight.specular = glm::vec3(1.0, 1.0, 1.0);
-
     pointLight.constant = 1.0f;
     pointLight.linear = 0.09f;
     pointLight.quadratic = 0.032f;
 
-    //spotlight ufo
+    //spotlight for ufo
     SpotLight& spotLight = programState->spotLight;
     spotLight.position = glm::vec3(4.0f, 4.0, 0.0);
     spotLight.ambient = glm::vec3(0.1, 0.1, 0.1);
@@ -411,15 +401,12 @@ int main() {
     spotLight.cutOff = glm::cos(glm::radians(20.0f));
     spotLight.outerCutOff = glm::cos(glm::radians(30.0f));
 
-
     // draw in wireframe
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-
 
     vector< glm::vec3 > meteor_positions;
     vector<float> sign = {-1, 1};
     for(int i = 0; i < 200; i++) {
-
         float meteor_x = 1.0f + static_cast <float> (rand()) / (static_cast <float> (RAND_MAX / 20.0f));
         meteor_x *= sign[rand() % 2];
         float meteor_y = 1.0f + static_cast <float> (rand()) / (static_cast <float> (RAND_MAX / 20.0f));
@@ -445,22 +432,17 @@ int main() {
     island_positions.emplace_back(glm::vec3(7.0f, -5.0f, 20.0f));
     islandScale.emplace_back(0.75f);
 
-
     // render loop
-    // -----------
     while (!glfwWindowShouldClose(window)) {
         // per-frame time logic
-        // --------------------
         float currentFrame = glfwGetTime();
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
 
         // input
-        // -----
         processInput(window);
 
         // render
-        // ------
         glClearColor(programState->clearColor.r, programState->clearColor.g, programState->clearColor.b, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -469,14 +451,13 @@ int main() {
         // view/projection transformations
         glm::mat4 model = glm::mat4(1.0f);
         glm::mat4 projection = glm::perspective(glm::radians(programState->camera.Zoom),
-                                                (float) SCR_WIDTH / (float) SCR_HEIGHT, 0.1f, 100.0f);
+                                                (float) SCR_WIDTH / (float) SCR_HEIGHT, 0.1f, 300.0f);
         glm::mat4 view = programState->camera.GetViewMatrix();
         ourShader.setMat4("projection", projection);
         ourShader.setMat4("view", view);
         ourShader.setMat4("model", model);
 
-
-
+        // cullface
         glEnable(GL_CULL_FACE);
         glCullFace(GL_BACK);
         glFrontFace(GL_CW);
@@ -494,9 +475,6 @@ int main() {
         glDrawArrays(GL_TRIANGLES, 0, 36);
 
         glDisable(GL_CULL_FACE);
-
-
-
 
         //skybox rendering
         //glDepthMask(GL_FALSE);
@@ -523,6 +501,7 @@ int main() {
         //glDepthMask(GL_TRUE);
         glDepthFunc(GL_LESS);
 
+        // point light uniforms
         ourShader.use();
         pointLight.position = glm::vec3(30.0 * cos(currentFrame), 5.0f, 30.0 * sin(currentFrame));
         ourShader.setVec3("pointLight.position", pointLight.position);
@@ -536,10 +515,10 @@ int main() {
         ourShader.setFloat("material.shininess", 32.0f);
         ourShader.setBool("blinn", blinn);
 
-        //spot light
+        //spot light uniforms
         ourShader.setVec3("spotLight.direction", glm::vec3(0.0f,-1.0f,0.0f));
         ourShader.setVec3("spotLight.position", glm::vec3(0.0f, 18.0f,0.0f));
-        ourShader.setVec3("spotLight.ambient", glm::vec3(30.0f));
+        ourShader.setVec3("spotLight.ambient", glm::vec3(20.0f));
         ourShader.setVec3("spotLight.diffuse", glm::vec3(0.85f, 0.25f, 0.0f));
         ourShader.setVec3("spotLight.specular", spotLight.specular);
         ourShader.setFloat("spotLight.constant", spotLight.constant);
@@ -552,8 +531,8 @@ int main() {
         // render tree model
         model = glm::mat4(1.0f);
         model = glm::translate(model,
-                               programState->treePosition); // translate it down so it's at the center of the scene
-        model = glm::scale(model, glm::vec3(programState->treeScale));    // it's a bit too big for our scene, so scale it down
+                               programState->treePosition);
+        model = glm::scale(model, glm::vec3(programState->treeScale));
         ourShader.setMat4("model", model);
         tree.Draw(ourShader);
 
@@ -561,8 +540,7 @@ int main() {
         for(int i = 0; i < meteor_positions.size(); i++) {
             model = glm::mat4(1.0f);
             model = glm::translate(model,meteor_positions[i]);
-
-            model = glm::rotate(model, currentFrame* glm::radians(5.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+            model = glm::rotate(model, currentFrame* glm::radians(10.0f), glm::vec3(1.0f, 0.0f, 1.0f));
             model = glm::scale(model, glm::vec3(programState->meteorScale));
             ourShader.setMat4("model", model);
             meteor.Draw(ourShader);
@@ -626,9 +604,7 @@ int main() {
         spaceship.Draw(ourShader);
 
 
-
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
-        // -------------------------------------------------------------------------------
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
@@ -638,8 +614,8 @@ int main() {
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
+
     // glfw: terminate, clearing all previously allocated GLFW resources.
-    // ------------------------------------------------------------------
     glfwTerminate();
     return 0;
 }
@@ -649,7 +625,6 @@ int main() {
 void processInput(GLFWwindow *window) {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
-
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
         programState->camera.ProcessKeyboard(FORWARD, deltaTime);
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
@@ -708,7 +683,6 @@ void DrawImGui(ProgramState *programState) {
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
 
-
     {
         static float f = 0.0f;
         ImGui::Begin("Hello window");
@@ -751,7 +725,6 @@ void key_callback(GLFWwindow *window, int key, int scancode, int action, int mod
     }
 }
 
-
 unsigned int loadTexture(char const * path)
 {
     unsigned int textureID;
@@ -788,7 +761,6 @@ unsigned int loadTexture(char const * path)
 
     return textureID;
 }
-
 
 unsigned int loadCubemap(vector<std::string> faces)
 {
