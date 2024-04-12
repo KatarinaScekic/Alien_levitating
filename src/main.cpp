@@ -16,6 +16,8 @@
 
 #include <iostream>
 
+#include <vector>
+
 void framebuffer_size_callback(GLFWwindow *window, int width, int height);
 
 void mouse_callback(GLFWwindow *window, double xpos, double ypos);
@@ -27,6 +29,8 @@ void processInput(GLFWwindow *window);
 void key_callback(GLFWwindow *window, int key, int scancode, int action, int mods);
 
 unsigned int loadCubemap(vector<std::string> faces);
+
+unsigned int loadTexture(char const * path);
 
 // settings
 const unsigned int SCR_WIDTH = 1600;
@@ -58,8 +62,20 @@ struct ProgramState {
     bool ImGuiEnabled = false;
     Camera camera;
     bool CameraMouseMovementUpdateEnabled = true;
-    glm::vec3 backpackPosition = glm::vec3(0.0f);
-    float backpackScale = 2.5f;
+    //glm::vec3 mini_islandPosition = glm::vec3(0.0f,  0.0f, 20.0f);
+    glm::vec3 treePosition = glm::vec3(25.0f, 0.0f, 10.0f);
+    //glm::vec3 meteorPosition = glm::vec3(0.0f, 0.0f, 0.0f);
+    glm::vec3 platformPosition = glm::vec3(0.0f, 0.0f, 0.0f);
+    glm::vec3 ufoPosition = glm::vec3(0.0f, 15.0f, 0.0f);
+    glm::vec3 plantPosition = glm::vec3(-15.75f, 0.0f, 7.5f);
+
+    //float mini_islandScale = 0.5f;
+    float treeScale = 0.7f;
+    float meteorScale = 0.2f;
+    float platformScale = 0.2f;
+    float ufoScale = 0.135f;
+    float plantScale = 0.5f;
+
     PointLight pointLight;
     ProgramState()
             : camera(glm::vec3(0.0f, 0.0f, 3.0f)) {}
@@ -163,10 +179,56 @@ int main() {
 
     // build and compile shaders
     // -------------------------
-    Shader ourShader("resources/shaders/2.model_lighting.vs", "resources/shaders/2.model_lighting.fs");
-    Shader skyShader("resources/shaders/skyShader.vs", "resources/shaders/skyShader.fs");
+    Shader ourShader("resources/shaders/model_lighting.vs", "resources/shaders/model_lighting.fs");
+    Shader skyShader("resources/shaders/sky_shader.vs", "resources/shaders/sky_shader.fs");
+    Shader boxShader("resources/shaders/box_shader.vs", "resources/shaders/box_shader.fs");
+    // cube vertices
+    float vertices[] = {
+            // Back face
+            -0.5f, -0.5f, -0.5f,  0.0f, 0.0f, // Bottom-left
+            0.5f, -0.5f, -0.5f,  1.0f, 0.0f, // bottom-right
+            0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // top-right
+            0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // top-right
+            -0.5f,  0.5f, -0.5f,  0.0f, 1.0f, // top-left
+            -0.5f, -0.5f, -0.5f,  0.0f, 0.0f, // bottom-left
+            // Front face
+            -0.5f, -0.5f,  0.5f,  0.0f, 0.0f, // bottom-left
+            0.5f,  0.5f,  0.5f,  1.0f, 1.0f, // top-right
+            0.5f, -0.5f,  0.5f,  1.0f, 0.0f, // bottom-right
+            0.5f,  0.5f,  0.5f,  1.0f, 1.0f, // top-right
+            -0.5f, -0.5f,  0.5f,  0.0f, 0.0f, // bottom-left
+            -0.5f,  0.5f,  0.5f,  0.0f, 1.0f, // top-left
+            // Left face
+            -0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // top-right
+            -0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // bottom-left
+            -0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // top-left
+            -0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // bottom-left
+            -0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // top-right
+            -0.5f, -0.5f,  0.5f,  0.0f, 0.0f, // bottom-right
+            // Right face
+            0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // top-left
+            0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // top-right
+            0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // bottom-right
+            0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // bottom-right
+            0.5f, -0.5f,  0.5f,  0.0f, 0.0f, // bottom-left
+            0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // top-left
+            // Bottom face
+            -0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // top-right
+            0.5f, -0.5f,  0.5f,  1.0f, 0.0f, // bottom-left
+            0.5f, -0.5f, -0.5f,  1.0f, 1.0f, // top-left
+            0.5f, -0.5f,  0.5f,  1.0f, 0.0f, // bottom-left
+            -0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // top-right
+            -0.5f, -0.5f,  0.5f,  0.0f, 0.0f, // bottom-right
+            // Top face
+            -0.5f,  0.5f, -0.5f,  0.0f, 1.0f, // top-left
+            0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // top-right
+            0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // bottom-right
+            0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // bottom-right
+            -0.5f,  0.5f,  0.5f,  0.0f, 0.0f, // bottom-left
+            -0.5f,  0.5f, -0.5f,  0.0f, 1.0f  // top-left
+    };
 
-
+    // skybox vertices
     float skyboxVertices[] = {
             // positions
             -1.0f,  1.0f, -1.0f,
@@ -212,8 +274,29 @@ int main() {
             1.0f, -1.0f,  1.0f
     };
 
+    // cube buffers
+    unsigned int VBO, VAO;
+    glGenVertexArrays(1, &VAO);
+    glGenBuffers(1, &VBO);
 
+    glBindVertexArray(VAO);
 
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+    // position attribute
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+    // texture coord attribute
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
+
+    // load and create a texture
+    // -------------------------
+
+    unsigned int texture1 = loadTexture("resources/textures/glasss.png");
+
+    // skybox buffers
     unsigned int skyboxVAO, skyboxVBO;
     glGenVertexArrays(1, &skyboxVAO);
     glGenBuffers(1, &skyboxVBO);
@@ -236,17 +319,43 @@ int main() {
     //load maps
     unsigned int cubemapTexture = loadCubemap(cube_faces);
 
+    // shaders config
     skyShader.use();
     skyShader.setInt("skybox", 0);
 
+    boxShader.use();
+    boxShader.setInt("texture1", 0);
+
     // load models
     // -----------
-    Model ourModel("resources/objects/backpack/backpack.obj");
-    ourModel.SetShaderTextureNamePrefix("material.");
+
+    Model mini_island("resources/objects/mini_island_obj/untitled.obj");
+    mini_island.SetShaderTextureNamePrefix("material.");
+
+    Model tree("resources/objects/alien_tree_obj/untitled.obj");
+    tree.SetShaderTextureNamePrefix("material.");
+
+    stbi_set_flip_vertically_on_load(false);
+    Model meteor("resources/objects/meteor_obj/untitled.obj");
+    meteor.SetShaderTextureNamePrefix("material.");
+    stbi_set_flip_vertically_on_load(true);
+
+    stbi_set_flip_vertically_on_load(false);
+    Model platform("resources/objects/platform_obj/untitled.obj");
+    platform.SetShaderTextureNamePrefix("material.");
+    stbi_set_flip_vertically_on_load(true);
+
+    stbi_set_flip_vertically_on_load(false);
+    Model ufo("resources/objects/ufo/scene.gltf");
+    ufo.SetShaderTextureNamePrefix("material.");
+    stbi_set_flip_vertically_on_load(true);
+
+    Model plant("resources/objects/plant_obj/untitled.obj");
+    plant.SetShaderTextureNamePrefix("material.");
 
     PointLight& pointLight = programState->pointLight;
     pointLight.position = glm::vec3(4.0f, 4.0, 0.0);
-    pointLight.ambient = glm::vec3(5.5, 5.5, 5.5);
+    pointLight.ambient = glm::vec3(7.0f, 7.0f, 7.0f);
     pointLight.diffuse = glm::vec3(0.6, 0.6, 0.6);
     pointLight.specular = glm::vec3(1.0, 1.0, 1.0);
 
@@ -256,6 +365,37 @@ int main() {
 
     // draw in wireframe
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
+
+    vector< glm::vec3 > meteor_positions;
+    vector<float> sign = {-1, 1};
+    for(int i = 0; i < 200; i++) {
+
+        float meteor_x = 1.0f + static_cast <float> (rand()) / (static_cast <float> (RAND_MAX / 20.0f));
+        meteor_x *= sign[rand() % 2];
+        float meteor_y = 1.0f + static_cast <float> (rand()) / (static_cast <float> (RAND_MAX / 20.0f));
+        meteor_y *= sign[rand() % 2];
+        float meteor_z = 1.0f + static_cast <float> (rand()) / (static_cast <float> (RAND_MAX / 20.0f));
+        meteor_z *= sign[rand() % 2];
+
+        std::cout << meteor_x << " " << meteor_y << " " << meteor_z << std::endl;
+
+        meteor_positions.emplace_back(glm::vec3(meteor_x, meteor_y, meteor_z));
+    }
+
+    vector< glm::vec3 > island_positions;
+    vector< float > islandScale;
+    island_positions.emplace_back(glm::vec3(25.0f, 15.0f, -7.0f));
+    islandScale.emplace_back(0.6f);
+    island_positions.emplace_back(glm::vec3(20.0f, 5.0f, 0.0f));
+    islandScale.emplace_back(0.45f);
+    island_positions.emplace_back(glm::vec3(-15.0f, 5.0f, 25.0f));
+    islandScale.emplace_back(0.5f);
+    island_positions.emplace_back(glm::vec3(-30.0f, 10.0f, -10.0f));
+    islandScale.emplace_back(1.0f);
+    island_positions.emplace_back(glm::vec3(7.0f, -5.0f, 20.0f));
+    islandScale.emplace_back(0.75f);
+
 
     // render loop
     // -----------
@@ -270,22 +410,44 @@ int main() {
         // -----
         processInput(window);
 
-
         // render
         // ------
         glClearColor(programState->clearColor.r, programState->clearColor.g, programState->clearColor.b, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+        ourShader.use();
+
         // view/projection transformations
+        glm::mat4 model = glm::mat4(1.0f);
         glm::mat4 projection = glm::perspective(glm::radians(programState->camera.Zoom),
                                                 (float) SCR_WIDTH / (float) SCR_HEIGHT, 0.1f, 100.0f);
         glm::mat4 view = programState->camera.GetViewMatrix();
         ourShader.setMat4("projection", projection);
         ourShader.setMat4("view", view);
+        ourShader.setMat4("model", model);
+
+        glEnable(GL_CULL_FACE);
+        glCullFace(GL_BACK);
+        glFrontFace(GL_CW);
+
+        // render box
+        boxShader.use();
+        model = glm::translate(model, glm::vec3(-20.0f, -10.0f, 0.0f));
+        model = glm::scale(model, glm::vec3(7.0f));
+        boxShader.setMat4("model", model);
+        boxShader.setMat4("view", view);
+        boxShader.setMat4("projection", projection);
+        glBindVertexArray(VAO);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, texture1);
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+
+        glDisable(GL_CULL_FACE);
 
         //skybox rendering
-        glDepthMask(GL_FALSE);
+        //glDepthMask(GL_FALSE);
 
+        glDepthFunc(GL_LEQUAL);
         skyShader.use();
 
         glm::mat4 viewCube = glm::mat4(glm::mat3(view));
@@ -296,6 +458,7 @@ int main() {
         skyShader.setMat4("view", viewCube);
         skyShader.setMat4("projection", projection);
         skyShader.setMat4("model", skyModel);
+
         // skybox cube
         glBindVertexArray(skyboxVAO);
         glActiveTexture(GL_TEXTURE0);
@@ -303,12 +466,13 @@ int main() {
         glDrawArrays(GL_TRIANGLES, 0, 36);
         glBindVertexArray(0);
 
-        glDepthMask(GL_TRUE);
+        //glDepthMask(GL_TRUE);
+        glDepthFunc(GL_LESS);
 
 
         // don't forget to enable shader before setting uniforms
         ourShader.use();
-        pointLight.position = glm::vec3(4.0 * cos(currentFrame), 10.0f, 4.0 * sin(currentFrame));
+        pointLight.position = glm::vec3(30.0 * cos(currentFrame), 5.0f, 30.0 * sin(currentFrame));
         ourShader.setVec3("pointLight.position", pointLight.position);
         ourShader.setVec3("pointLight.ambient", pointLight.ambient);
         ourShader.setVec3("pointLight.diffuse", pointLight.diffuse);
@@ -319,17 +483,73 @@ int main() {
         ourShader.setVec3("viewPosition", programState->camera.Position);
         ourShader.setFloat("material.shininess", 32.0f);
 
-        // render the loaded model
-        glm::mat4 model = glm::mat4(1.0f);
+        /*
+        // render island model
+        model = glm::mat4(1.0f);
         model = glm::translate(model,
-                               programState->backpackPosition); // translate it down so it's at the center of the scene
-        model = glm::scale(model, glm::vec3(programState->backpackScale));    // it's a bit too big for our scene, so scale it down
+                               programState->mini_islandPosition); // translate it down so it's at the center of the scene
+        model = glm::scale(model, glm::vec3(programState->mini_islandScale));    // it's a bit too big for our scene, so scale it down
+        // model = glm::rotate(model, glm::radians(180.0f), glm::vec3(0.0f, 0.0f, 1.0f));
         ourShader.setMat4("model", model);
-        ourModel.Draw(ourShader);
+        mini_island.Draw(ourShader);
+        */
 
+        // render tree model
+        model = glm::mat4(1.0f);
+        model = glm::translate(model,
+                               programState->treePosition); // translate it down so it's at the center of the scene
+        model = glm::scale(model, glm::vec3(programState->treeScale));    // it's a bit too big for our scene, so scale it down
+        ourShader.setMat4("model", model);
+        tree.Draw(ourShader);
+
+        //render meteor models
+        for(int i = 0; i < meteor_positions.size(); i++) {
+            model = glm::mat4(1.0f);
+            model = glm::translate(model,meteor_positions[i]);
+
+            model = glm::rotate(model, glm::radians(30.0f*i), glm::vec3(1.0f, 0.0f, 0.0f));
+            model = glm::scale(model, glm::vec3(programState->meteorScale));
+            ourShader.setMat4("model", model);
+            meteor.Draw(ourShader);
+        }
+
+        // render islands
+        for(int i = 0; i < island_positions.size(); i++) {
+            model = glm::mat4(1.0f);
+            model = glm::translate(model,island_positions[i]);
+            model = glm::scale(model, glm::vec3(islandScale[i]));
+            ourShader.setMat4("model", model);
+            mini_island.Draw(ourShader);
+        }
+
+        // render tree model
+        model = glm::mat4(1.0f);
+        model = glm::translate(model,
+                               programState->plantPosition); // translate it down so it's at the center of the scene
+        model = glm::scale(model, glm::vec3(programState->plantScale));    // it's a bit too big for our scene, so scale it down
+        ourShader.setMat4("model", model);
+        plant.Draw(ourShader);
+
+        /*
         if (programState->ImGuiEnabled)
             DrawImGui(programState);
+        */
 
+        // render platform
+        model = glm::mat4(1.0f);
+        model = glm::translate(model,
+                               programState->platformPosition); // translate it down so it's at the center of the scene
+        model = glm::scale(model, glm::vec3(programState->platformScale));    // it's a bit too big for our scene, so scale it down
+        ourShader.setMat4("model", model);
+        platform.Draw(ourShader);
+
+        // render ufo
+        model = glm::mat4(1.0f);
+        model = glm::translate(model,
+                               programState->ufoPosition); // translate it down so it's at the center of the scene
+        model = glm::scale(model, glm::vec3(programState->ufoScale));    // it's a bit too big for our scene, so scale it down
+        ourShader.setMat4("model", model);
+        ufo.Draw(ourShader);
 
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
@@ -398,6 +618,7 @@ void scroll_callback(GLFWwindow *window, double xoffset, double yoffset) {
     programState->camera.ProcessMouseScroll(yoffset);
 }
 
+/*
 void DrawImGui(ProgramState *programState) {
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
@@ -410,8 +631,8 @@ void DrawImGui(ProgramState *programState) {
         ImGui::Text("Hello text");
         ImGui::SliderFloat("Float slider", &f, 0.0, 1.0);
         ImGui::ColorEdit3("Background color", (float *) &programState->clearColor);
-        ImGui::DragFloat3("Backpack position", (float*)&programState->backpackPosition);
-        ImGui::DragFloat("Backpack scale", &programState->backpackScale, 0.05, 0.1, 4.0);
+        ImGui::DragFloat3("Mini island position", (float*)&programState->mini_islandPosition);
+        ImGui::DragFloat("Mini island scale", &programState->backpackScale, 0.05, 0.1, 4.0);
 
         ImGui::DragFloat("pointLight.constant", &programState->pointLight.constant, 0.05, 0.0, 1.0);
         ImGui::DragFloat("pointLight.linear", &programState->pointLight.linear, 0.05, 0.0, 1.0);
@@ -432,6 +653,7 @@ void DrawImGui(ProgramState *programState) {
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
+*/
 
 void key_callback(GLFWwindow *window, int key, int scancode, int action, int mods) {
     if (key == GLFW_KEY_F1 && action == GLFW_PRESS) {
@@ -443,6 +665,44 @@ void key_callback(GLFWwindow *window, int key, int scancode, int action, int mod
             glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
         }
     }
+}
+
+
+unsigned int loadTexture(char const * path)
+{
+    unsigned int textureID;
+    glGenTextures(1, &textureID);
+
+    int width, height, nrComponents;
+    unsigned char *data = stbi_load(path, &width, &height, &nrComponents, 0);
+    if (data)
+    {
+        GLenum format;
+        if (nrComponents == 1)
+            format = GL_RED;
+        else if (nrComponents == 3)
+            format = GL_RGB;
+        else if (nrComponents == 4)
+            format = GL_RGBA;
+
+        glBindTexture(GL_TEXTURE_2D, textureID);
+        glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+        glGenerateMipmap(GL_TEXTURE_2D);
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+        stbi_image_free(data);
+    }
+    else
+    {
+        std::cout << "Texture failed to load at path: " << path << std::endl;
+        stbi_image_free(data);
+    }
+
+    return textureID;
 }
 
 

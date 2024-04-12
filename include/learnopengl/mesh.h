@@ -91,6 +91,8 @@ public:
 
         // always good practice to set everything back to defaults once configured.
         glActiveTexture(GL_TEXTURE0);
+
+        // reset svih tekstura na default
     }
 
 private:
