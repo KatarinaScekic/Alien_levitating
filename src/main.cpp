@@ -35,7 +35,8 @@ unsigned int loadTexture(char const * path);
 // settings
 const unsigned int SCR_WIDTH = 1600;
 const unsigned int SCR_HEIGHT = 900;
-
+bool blinn = false;
+bool blinnKeyPressed = false;
 // camera
 
 float lastX = SCR_WIDTH / 2.0f;
@@ -57,6 +58,22 @@ struct PointLight {
     float quadratic;
 };
 
+struct SpotLight {
+    glm::vec3 position;
+    glm::vec3 direction;
+    float cutOff;
+    float outerCutOff;
+
+    float constant;
+    float linear;
+    float quadratic;
+
+    glm::vec3 ambient;
+    glm::vec3 diffuse;
+    glm::vec3 specular;
+};
+
+
 struct ProgramState {
     glm::vec3 clearColor = glm::vec3(0);
     bool ImGuiEnabled = false;
@@ -67,9 +84,9 @@ struct ProgramState {
     //glm::vec3 meteorPosition = glm::vec3(0.0f, 0.0f, 0.0f);
     glm::vec3 platformPosition = glm::vec3(0.0f, 0.0f, 0.0f);
     glm::vec3 ufoPosition = glm::vec3(0.0f, 15.0f, 0.0f);
-    glm::vec3 plantPosition = glm::vec3(-20.0f, -7.0f, 0.0f);
-    glm::vec3 alienPosition = glm::vec3(5.0f, 7.0f, 5.0f);
-    glm::vec3 spaceshipPosition = glm::vec3(-30.0f, 10.0f, 30.0f);
+    glm::vec3 plantPosition = glm::vec3(-20.0f, -6.5f, 0.0f);
+    glm::vec3 alienPosition = glm::vec3(0.0f, 8.0f, 0.0f);
+    glm::vec3 spaceshipPosition = glm::vec3(-30.0f, 10.0f, 20.0f);
 
     float treeScale = 0.7f;
     float meteorScale = 0.4f;
@@ -77,9 +94,11 @@ struct ProgramState {
     float ufoScale = 0.135f;
     float plantScale = 0.5f;
     float alienScale = 3.0f;
-    float spaceshipScale = 1.0f;
+    float spaceshipScale = 0.7f;
 
     PointLight pointLight;
+    SpotLight spotLight;
+
     ProgramState()
             : camera(glm::vec3(0.0f, 0.0f, 3.0f)) {}
 
@@ -185,6 +204,7 @@ int main() {
     Shader ourShader("resources/shaders/model_lighting.vs", "resources/shaders/model_lighting.fs");
     Shader skyShader("resources/shaders/sky_shader.vs", "resources/shaders/sky_shader.fs");
     Shader boxShader("resources/shaders/box_shader.vs", "resources/shaders/box_shader.fs");
+
     // cube vertices
     float vertices[] = {
             // Back face
@@ -230,6 +250,7 @@ int main() {
             -0.5f,  0.5f,  0.5f,  0.0f, 0.0f, // bottom-left
             -0.5f,  0.5f, -0.5f,  0.0f, 1.0f  // top-left
     };
+
 
     // skybox vertices
     float skyboxVertices[] = {
@@ -297,7 +318,8 @@ int main() {
     // load and create a texture
     // -------------------------
 
-    unsigned int texture1 = loadTexture("resources/textures/glasss.png");
+    unsigned int texture1 = loadTexture("resources/textures/blue_tesseract.jpg");
+
 
     // skybox buffers
     unsigned int skyboxVAO, skyboxVBO;
@@ -328,6 +350,7 @@ int main() {
 
     boxShader.use();
     boxShader.setInt("texture1", 0);
+
 
     // load models
     // -----------
@@ -368,7 +391,7 @@ int main() {
 
     PointLight& pointLight = programState->pointLight;
     pointLight.position = glm::vec3(4.0f, 4.0, 0.0);
-    pointLight.ambient = glm::vec3(7.0f, 7.0f, 7.0f);
+    pointLight.ambient = glm::vec3(10.0f, 10.0f, 10.0f);
     pointLight.diffuse = glm::vec3(0.6, 0.6, 0.6);
     pointLight.specular = glm::vec3(1.0, 1.0, 1.0);
 
@@ -376,13 +399,26 @@ int main() {
     pointLight.linear = 0.09f;
     pointLight.quadratic = 0.032f;
 
+    //spotlight ufo
+    SpotLight& spotLight = programState->spotLight;
+    spotLight.position = glm::vec3(4.0f, 4.0, 0.0);
+    spotLight.ambient = glm::vec3(0.1, 0.1, 0.1);
+    spotLight.diffuse = glm::vec3(0.9f, 0.25f, 0.1f);
+    spotLight.specular = glm::vec3(1.0f, 1.0f, 1.0f);
+    spotLight.constant = 1.0f;
+    spotLight.linear = 0.09f;
+    spotLight.quadratic = 0.032f;
+    spotLight.cutOff = glm::cos(glm::radians(20.0f));
+    spotLight.outerCutOff = glm::cos(glm::radians(30.0f));
+
+
     // draw in wireframe
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
 
     vector< glm::vec3 > meteor_positions;
     vector<float> sign = {-1, 1};
-    for(int i = 0; i < 300; i++) {
+    for(int i = 0; i < 200; i++) {
 
         float meteor_x = 1.0f + static_cast <float> (rand()) / (static_cast <float> (RAND_MAX / 20.0f));
         meteor_x *= sign[rand() % 2];
@@ -391,7 +427,7 @@ int main() {
         float meteor_z = 1.0f + static_cast <float> (rand()) / (static_cast <float> (RAND_MAX / 20.0f));
         meteor_z *= sign[rand() % 2];
 
-        std::cout << meteor_x << " " << meteor_y << " " << meteor_z << std::endl;
+        //std::cout << meteor_x << " " << meteor_y << " " << meteor_z << std::endl;
 
         meteor_positions.emplace_back(glm::vec3(meteor_x, meteor_y, meteor_z));
     }
@@ -439,6 +475,8 @@ int main() {
         ourShader.setMat4("view", view);
         ourShader.setMat4("model", model);
 
+
+
         glEnable(GL_CULL_FACE);
         glCullFace(GL_BACK);
         glFrontFace(GL_CW);
@@ -456,6 +494,9 @@ int main() {
         glDrawArrays(GL_TRIANGLES, 0, 36);
 
         glDisable(GL_CULL_FACE);
+
+
+
 
         //skybox rendering
         //glDepthMask(GL_FALSE);
@@ -482,8 +523,6 @@ int main() {
         //glDepthMask(GL_TRUE);
         glDepthFunc(GL_LESS);
 
-
-        // don't forget to enable shader before setting uniforms
         ourShader.use();
         pointLight.position = glm::vec3(30.0 * cos(currentFrame), 5.0f, 30.0 * sin(currentFrame));
         ourShader.setVec3("pointLight.position", pointLight.position);
@@ -495,17 +534,20 @@ int main() {
         ourShader.setFloat("pointLight.quadratic", pointLight.quadratic);
         ourShader.setVec3("viewPosition", programState->camera.Position);
         ourShader.setFloat("material.shininess", 32.0f);
+        ourShader.setBool("blinn", blinn);
 
-        /*
-        // render island model
-        model = glm::mat4(1.0f);
-        model = glm::translate(model,
-                               programState->mini_islandPosition); // translate it down so it's at the center of the scene
-        model = glm::scale(model, glm::vec3(programState->mini_islandScale));    // it's a bit too big for our scene, so scale it down
-        // model = glm::rotate(model, glm::radians(180.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-        ourShader.setMat4("model", model);
-        mini_island.Draw(ourShader);
-        */
+        //spot light
+        ourShader.setVec3("spotLight.direction", glm::vec3(0.0f,-1.0f,0.0f));
+        ourShader.setVec3("spotLight.position", glm::vec3(0.0f, 18.0f,0.0f));
+        ourShader.setVec3("spotLight.ambient", glm::vec3(30.0f));
+        ourShader.setVec3("spotLight.diffuse", glm::vec3(0.85f, 0.25f, 0.0f));
+        ourShader.setVec3("spotLight.specular", spotLight.specular);
+        ourShader.setFloat("spotLight.constant", spotLight.constant);
+        ourShader.setFloat("spotLight.linear", spotLight.linear);
+        ourShader.setFloat("spotLight.quadratic", spotLight.quadratic);
+        ourShader.setFloat("spotLight.cutOff", spotLight.cutOff);
+        ourShader.setFloat("spotLight.outerCutOff", spotLight.outerCutOff);
+
 
         // render tree model
         model = glm::mat4(1.0f);
@@ -515,12 +557,12 @@ int main() {
         ourShader.setMat4("model", model);
         tree.Draw(ourShader);
 
-        //render meteor models
+        //render meteors
         for(int i = 0; i < meteor_positions.size(); i++) {
             model = glm::mat4(1.0f);
             model = glm::translate(model,meteor_positions[i]);
 
-            model = glm::rotate(model, glm::radians(30.0f*i), glm::vec3(1.0f, 0.0f, 0.0f));
+            model = glm::rotate(model, currentFrame* glm::radians(5.0f), glm::vec3(1.0f, 0.0f, 0.0f));
             model = glm::scale(model, glm::vec3(programState->meteorScale));
             ourShader.setMat4("model", model);
             meteor.Draw(ourShader);
@@ -531,6 +573,7 @@ int main() {
             model = glm::mat4(1.0f);
             model = glm::translate(model,island_positions[i]);
             model = glm::scale(model, glm::vec3(islandScale[i]));
+            model = glm::rotate(model, currentFrame*glm::radians(7.0f), glm::vec3(0.0f, 1.0f, 0.0f));
             ourShader.setMat4("model", model);
             mini_island.Draw(ourShader);
         }
@@ -538,39 +581,38 @@ int main() {
         // render plant model
         model = glm::mat4(1.0f);
         model = glm::translate(model,
-                               programState->plantPosition); // translate it down so it's at the center of the scene
-        model = glm::scale(model, glm::vec3(programState->plantScale));    // it's a bit too big for our scene, so scale it down
+                               programState->plantPosition);
+        model = glm::scale(model, glm::vec3(programState->plantScale));
         ourShader.setMat4("model", model);
         plant.Draw(ourShader);
 
         // render alien model
         model = glm::mat4(1.0f);
         model = glm::translate(model,
-                               programState->alienPosition); // translate it down so it's at the center of the scene
-        model = glm::scale(model, glm::vec3(programState->alienScale));    // it's a bit too big for our scene, so scale it down
+                               programState->alienPosition);
+        model = glm::scale(model, glm::vec3(programState->alienScale));
         ourShader.setMat4("model", model);
         alien.Draw(ourShader);
-
-        /*
 
         /*
         if (programState->ImGuiEnabled)
             DrawImGui(programState);
         */
 
-        // render platform
+        // render platform model
         model = glm::mat4(1.0f);
         model = glm::translate(model,
-                               programState->platformPosition); // translate it down so it's at the center of the scene
-        model = glm::scale(model, glm::vec3(programState->platformScale));    // it's a bit too big for our scene, so scale it down
+                               programState->platformPosition);
+        model = glm::scale(model, glm::vec3(programState->platformScale));
         ourShader.setMat4("model", model);
         platform.Draw(ourShader);
 
-        // render ufo
+        // render ufo model
         model = glm::mat4(1.0f);
         model = glm::translate(model,
-                               programState->ufoPosition); // translate it down so it's at the center of the scene
-        model = glm::scale(model, glm::vec3(programState->ufoScale));    // it's a bit too big for our scene, so scale it down
+                               programState->ufoPosition);
+        model = glm::scale(model, glm::vec3(programState->ufoScale));
+        model = glm::rotate(model, currentFrame*glm::radians(50.0f), glm::vec3(0.0f, 1.0f, 0.0f));
         ourShader.setMat4("model", model);
         ufo.Draw(ourShader);
 
@@ -616,6 +658,15 @@ void processInput(GLFWwindow *window) {
         programState->camera.ProcessKeyboard(LEFT, deltaTime);
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
         programState->camera.ProcessKeyboard(RIGHT, deltaTime);
+    if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
+        programState->camera.Position.y += 1.0f;
+    if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
+        programState->camera.Position.y -= 1.0f;
+    if (glfwGetKey(window, GLFW_KEY_B) == GLFW_PRESS && !blinnKeyPressed)
+    {
+        blinn = !blinn;
+        blinnKeyPressed = true;
+    }
 }
 
 // glfw: whenever the window size changed (by OS or user resize) this callback function executes

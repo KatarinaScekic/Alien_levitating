@@ -69,7 +69,6 @@ Ks 0.500000 0.500000 0.500000
 Ni 1.500000
 illum 2
 map_Kd textures/PeacockPlant_baseColor.png
-map_d textures/PeacockPlant_baseColor.png
 map_Bump -bm 1.000000 textures/PeacockPlant_normal.png
 
 newmtl Rocks
@@ -103,7 +102,6 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.500000
 illum 2
 map_Kd textures/grass_baseColor.png
-map_d textures/grass_baseColor.png
 
 newmtl ground1
 Ns 250.000000
