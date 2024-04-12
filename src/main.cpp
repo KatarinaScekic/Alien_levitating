@@ -67,14 +67,17 @@ struct ProgramState {
     //glm::vec3 meteorPosition = glm::vec3(0.0f, 0.0f, 0.0f);
     glm::vec3 platformPosition = glm::vec3(0.0f, 0.0f, 0.0f);
     glm::vec3 ufoPosition = glm::vec3(0.0f, 15.0f, 0.0f);
-    glm::vec3 plantPosition = glm::vec3(-15.75f, 0.0f, 7.5f);
+    glm::vec3 plantPosition = glm::vec3(-20.0f, -7.0f, 0.0f);
+    glm::vec3 alienPosition = glm::vec3(5.0f, 7.0f, 5.0f);
+    glm::vec3 spaceshipPosition = glm::vec3(-30.0f, 10.0f, 30.0f);
 
-    //float mini_islandScale = 0.5f;
     float treeScale = 0.7f;
-    float meteorScale = 0.2f;
+    float meteorScale = 0.4f;
     float platformScale = 0.2f;
     float ufoScale = 0.135f;
     float plantScale = 0.5f;
+    float alienScale = 3.0f;
+    float spaceshipScale = 1.0f;
 
     PointLight pointLight;
     ProgramState()
@@ -329,19 +332,19 @@ int main() {
     // load models
     // -----------
 
-    Model mini_island("resources/objects/mini_island_obj/untitled.obj");
+    Model mini_island("resources/objects/mini_island/untitled.obj");
     mini_island.SetShaderTextureNamePrefix("material.");
 
-    Model tree("resources/objects/alien_tree_obj/untitled.obj");
+    Model tree("resources/objects/alien_tree/untitled.obj");
     tree.SetShaderTextureNamePrefix("material.");
 
     stbi_set_flip_vertically_on_load(false);
-    Model meteor("resources/objects/meteor_obj/untitled.obj");
+    Model meteor("resources/objects/meteor/untitled.obj");
     meteor.SetShaderTextureNamePrefix("material.");
     stbi_set_flip_vertically_on_load(true);
 
     stbi_set_flip_vertically_on_load(false);
-    Model platform("resources/objects/platform_obj/untitled.obj");
+    Model platform("resources/objects/platform/untitled.obj");
     platform.SetShaderTextureNamePrefix("material.");
     stbi_set_flip_vertically_on_load(true);
 
@@ -350,8 +353,18 @@ int main() {
     ufo.SetShaderTextureNamePrefix("material.");
     stbi_set_flip_vertically_on_load(true);
 
-    Model plant("resources/objects/plant_obj/untitled.obj");
+    Model plant("resources/objects/plant/untitled.obj");
     plant.SetShaderTextureNamePrefix("material.");
+
+    stbi_set_flip_vertically_on_load(false);
+    Model alien("resources/objects/alien/scene.gltf");
+    alien.SetShaderTextureNamePrefix("material.");
+    stbi_set_flip_vertically_on_load(true);
+
+    stbi_set_flip_vertically_on_load(false);
+    Model spaceship("resources/objects/spaceship/scene.gltf");
+    spaceship.SetShaderTextureNamePrefix("material.");
+    stbi_set_flip_vertically_on_load(true);
 
     PointLight& pointLight = programState->pointLight;
     pointLight.position = glm::vec3(4.0f, 4.0, 0.0);
@@ -369,7 +382,7 @@ int main() {
 
     vector< glm::vec3 > meteor_positions;
     vector<float> sign = {-1, 1};
-    for(int i = 0; i < 200; i++) {
+    for(int i = 0; i < 300; i++) {
 
         float meteor_x = 1.0f + static_cast <float> (rand()) / (static_cast <float> (RAND_MAX / 20.0f));
         meteor_x *= sign[rand() % 2];
@@ -522,13 +535,23 @@ int main() {
             mini_island.Draw(ourShader);
         }
 
-        // render tree model
+        // render plant model
         model = glm::mat4(1.0f);
         model = glm::translate(model,
                                programState->plantPosition); // translate it down so it's at the center of the scene
         model = glm::scale(model, glm::vec3(programState->plantScale));    // it's a bit too big for our scene, so scale it down
         ourShader.setMat4("model", model);
         plant.Draw(ourShader);
+
+        // render alien model
+        model = glm::mat4(1.0f);
+        model = glm::translate(model,
+                               programState->alienPosition); // translate it down so it's at the center of the scene
+        model = glm::scale(model, glm::vec3(programState->alienScale));    // it's a bit too big for our scene, so scale it down
+        ourShader.setMat4("model", model);
+        alien.Draw(ourShader);
+
+        /*
 
         /*
         if (programState->ImGuiEnabled)
@@ -550,6 +573,16 @@ int main() {
         model = glm::scale(model, glm::vec3(programState->ufoScale));    // it's a bit too big for our scene, so scale it down
         ourShader.setMat4("model", model);
         ufo.Draw(ourShader);
+
+        // render spaceship model
+        model = glm::mat4(1.0f);
+        model = glm::translate(model,
+                               programState->spaceshipPosition);
+        model = glm::scale(model, glm::vec3(programState->spaceshipScale));
+        model = glm::rotate(model, glm::radians(220.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+        ourShader.setMat4("model", model);
+        spaceship.Draw(ourShader);
+
 
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
